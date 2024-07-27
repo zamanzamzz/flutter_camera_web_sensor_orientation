@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:html' as html;
+import 'dart:math' show pi;
 import 'dart:ui';
 import 'dart:ui_web' as ui_web;
 
@@ -44,6 +45,7 @@ class Camera {
   Camera({
     required this.textureId,
     required CameraService cameraService,
+    this.sensorOrientation = 0,
     this.options = const CameraOptions(),
     this.recorderOptions = const (audioBitrate: null, videoBitrate: null),
   }) : _cameraService = cameraService;
@@ -54,6 +56,9 @@ class Camera {
 
   /// The texture id used to register the camera view.
   final int textureId;
+
+  /// Sensor orientation: can be one of 0, 90, 180, 270
+  final int sensorOrientation;
 
   /// The camera options used to initialize a camera, empty by default.
   final CameraOptions options;
@@ -247,18 +252,27 @@ class Camera {
     final int videoWidth = videoElement.videoWidth;
     final int videoHeight = videoElement.videoHeight;
     final html.CanvasElement canvas =
-        html.CanvasElement(width: videoWidth, height: videoHeight);
-    final bool isBackCamera = getLensDirection() == CameraLensDirection.back;
+        sensorOrientation == 90 || sensorOrientation == 270
+            ? html.CanvasElement(width: videoHeight, height: videoWidth)
+            : html.CanvasElement(width: videoWidth, height: videoHeight);
 
-    // Flip the picture horizontally if it is not taken from a back camera.
-    if (!isBackCamera) {
-      canvas.context2D
-        ..translate(videoWidth, 0)
-        ..scale(-1, 1);
+    if (sensorOrientation == 90 || sensorOrientation == 270) {
+      canvas.context2D.translate(videoHeight / 2, videoWidth / 2);
+    } else if (sensorOrientation == 180) {
+      canvas.context2D.translate(videoWidth / 2, videoHeight / 2);
     }
 
-    canvas.context2D
-        .drawImageScaled(videoElement, 0, 0, videoWidth, videoHeight);
+    if (sensorOrientation != 0) {
+      canvas.context2D.rotate(sensorOrientation * pi / 180);
+    }
+
+    if (sensorOrientation != 0) {
+      canvas.context2D
+          .drawImage(videoElement, -videoWidth / 2, -videoHeight / 2);
+    } else {
+      canvas.context2D
+          .drawImageScaled(videoElement, 0, 0, videoWidth, videoHeight);
+    }
 
     final html.Blob blob = await canvas.toBlob('image/jpeg');
 
@@ -613,13 +627,6 @@ class Camera {
 
   /// Applies default styles to the video [element].
   void _applyDefaultVideoStyles(html.VideoElement element) {
-    final bool isBackCamera = getLensDirection() == CameraLensDirection.back;
-
-    // Flip the video horizontally if it is not taken from a back camera.
-    if (!isBackCamera) {
-      element.style.transform = 'scaleX(-1)';
-    }
-
     element.style
       ..transformOrigin = 'center'
       ..pointerEvents = 'none'

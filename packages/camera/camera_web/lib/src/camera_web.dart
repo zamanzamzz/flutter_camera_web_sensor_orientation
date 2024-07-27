@@ -155,21 +155,25 @@ class CameraPlugin extends CameraPlatform {
           // https://developer.mozilla.org/en-US/docs/Web/API/MediaDeviceInfo/label
           //
           // Sensor orientation is currently not supported.
-          final String cameraLabel = videoInputDevice.label ?? '';
-          final CameraDescription camera = CameraDescription(
-            name: cameraLabel,
-            lensDirection: lensDirection,
-            sensorOrientation: 0,
-          );
-
           final CameraMetadata cameraMetadata = CameraMetadata(
             deviceId: videoInputDevice.deviceId!,
             facingMode: facingMode,
           );
 
-          cameras.add(camera);
+          for (final int sensorOrientation in <int>[0, 90, 180, 270]) {
+            final String cameraLabel = videoInputDevice.label != null
+                ? '${videoInputDevice.label}: $sensorOrientation'
+                : '$sensorOrientation';
+            final CameraDescription camera = CameraDescription(
+              name: cameraLabel,
+              lensDirection: lensDirection,
+              sensorOrientation: sensorOrientation,
+            );
 
-          camerasMetadata[camera] = cameraMetadata;
+            cameras.add(camera);
+
+            camerasMetadata[camera] = cameraMetadata;
+          }
 
           // Release the camera stream of the current video input device.
           for (final html.MediaStreamTrack videoTrack in videoTracks) {
@@ -237,6 +241,7 @@ class CameraPlugin extends CameraPlatform {
       final Camera camera = Camera(
         textureId: textureId,
         cameraService: _cameraService,
+        sensorOrientation: cameraDescription.sensorOrientation,
         options: CameraOptions(
           audio: AudioConstraints(enabled: mediaSettings?.enableAudio ?? true),
           video: VideoConstraints(
