@@ -24,7 +24,11 @@ dependencies:
   camera_android_camerax: ^0.6.5
   camera_avfoundation: ^0.9.15
   camera_platform_interface: ^2.6.0
-  camera_web: ^0.3.3
+  camera_web: 
+    git:
+      url: https://github.com/zamanzamzz/flutter_camera_web_sensor_orientation.git
+      ref: cd976057145cbe755bd09a7feff3dd171b8d5632
+      path: packages/camera/camera_web
   flutter:
     sdk: flutter
   flutter_plugin_android_lifecycle: ^2.0.2
